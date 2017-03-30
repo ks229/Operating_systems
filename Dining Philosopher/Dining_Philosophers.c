@@ -66,27 +66,29 @@ int main()
 void *activity(int phil)
 {	
 	int k;
-	printf("Philosopher[%d] is Thinking\n",phil);
+	printf("Philosopher[%d] -> Thinking\n",phil);
 	sleep(2);
 	pickup_fork(phil);
-	printf("Philosopher[%d] is Eating\n",phil);
+	printf("Philosopher[%d] -> Eating\n",phil);
 	k=rand()%3+1;
 	timed[phil]=timed[phil]+k;
 	sleep(k);
 	return_fork(phil);
+	printf("Philosopher[%d] -> Thinking\n",phil);
 }
 int pickup_fork(int phil)
 {	
+	int k,m;
 	pthread_mutex_lock(&forks);
-	printf("Philosopher[%d] is Hungry\n",phil);
+	printf("Philosopher[%d] -> Hungry\n",phil);
 	while(fork_state[(phil)%NoPhil]!='F')
 	{
-		pthread_cond_wait(&freed[(phil)%NoPhil],&forks);
+		k=pthread_cond_wait(&freed[(phil)%NoPhil],&forks);
 	}
 	fork_state[phil%NoPhil]='U';
 	while(fork_state[(phil+1)%NoPhil]!='F')
 	{
-		pthread_cond_wait(&freed[(phil+1)%NoPhil],&forks);
+		m=pthread_cond_wait(&freed[(phil+1)%NoPhil],&forks);
 	}
 	fork_state[(phil+1)%NoPhil]='U';
 	printf("Philosopher[%d] has fork[%d] and fork[%d]\n",phil,(phil)%NoPhil,(phil+1)%NoPhil);
