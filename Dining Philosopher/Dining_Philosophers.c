@@ -1,3 +1,8 @@
+/*
+NAME        :KARTHIK NATH S
+ROLL NO     :1410110187
+TEAM MEMBER :JASKARAN SINGH SAINI
+*/
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -5,26 +10,27 @@
 #include <unistd.h>
 #include <time.h>
 #define MAX 50
-pthread_mutex_t forks;
-pthread_cond_t freed[MAX];
-int NoPhil;
+struct timespec start,finish;
+double elapsed;
+pthread_mutex_t forks;		//mutex locks 
+pthread_cond_t freed[MAX];	//condition variables
+int NoPhil;	
 int *timed;
-char *fork_state;
+char *fork_state;	//state of the forks
 int display();
-int pickup_fork(int phil);
-int return_fork(int phil);
-void *activity(int phil);
+int pickup_fork(int phil);	//funciton to pickup theforks
+int return_fork(int phil);	//funciton to return the forks
+void *activity(int phil);	//thread function where philosophers run
 int main()
 {	
-	clock_t t;
 	char choice='Y';
-	int err_mutex,err_cond,err_thread;
+	int err_mutex,err_cond,err_thread;	//error variables if error is encountered
 	printf("Enter the number of philosophers :");
 	scanf("%d",&NoPhil);
-	t=clock();
 	pthread_t philosopher[NoPhil];
-	fork_state=malloc(NoPhil*sizeof(char));
+	fork_state=malloc(NoPhil*sizeof(char));	//state of each fork
 	timed=malloc(NoPhil*sizeof(int));
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	while(choice=='Y')
 	{
 		for(int i=0;i<NoPhil;i++)
@@ -56,21 +62,19 @@ int main()
 		printf("Do you want to continue(Y/N):");
 		scanf(" %c",&choice);
 	}
-	t=clock()-t;
+	clock_gettime(CLOCK_MONOTONIC, &finish);
 	printf("	--Summary--\n");
 	display();
-	double total_time=((double)(t))/CLOCKS_PER_SEC;
-	printf("Total time taken = %f\n",total_time);
 	return 0;
 }
-void *activity(int phil)
+void *activity(int phil)	//each philosopher runs as a single thread
 {	
 	int k;
 	printf("Philosopher[%d] -> Thinking\n",phil);
-	sleep(2);
+	sleep(2);	//philosopher thinks for 2 seconds
 	pickup_fork(phil);
 	printf("Philosopher[%d] -> Eating\n",phil);
-	k=rand()%3+1;
+	k=rand()%3+1;	//philosopher eats randomly between 1 to 3 seconds
 	timed[phil]=timed[phil]+k;
 	sleep(k);
 	return_fork(phil);
@@ -78,20 +82,19 @@ void *activity(int phil)
 }
 int pickup_fork(int phil)
 {	
-	int k,m;
 	pthread_mutex_lock(&forks);
 	printf("Philosopher[%d] -> Hungry\n",phil);
 	while(fork_state[(phil)%NoPhil]!='F')
 	{
-		k=pthread_cond_wait(&freed[(phil)%NoPhil],&forks);
+		pthread_cond_wait(&freed[(phil)%NoPhil],&forks);
 	}
 	fork_state[phil%NoPhil]='U';
 	while(fork_state[(phil+1)%NoPhil]!='F')
 	{
-		m=pthread_cond_wait(&freed[(phil+1)%NoPhil],&forks);
+		pthread_cond_wait(&freed[(phil+1)%NoPhil],&forks);
 	}
 	fork_state[(phil+1)%NoPhil]='U';
-	printf("Philosopher[%d] has fork[%d] and fork[%d]\n",phil,(phil)%NoPhil,(phil+1)%NoPhil);
+	printf("Philosopher[%d] has taken fork[%d] and fork[%d]\n",phil,(phil+1)%NoPhil,(phil)%NoPhil);
 	pthread_mutex_unlock(&forks);
 	return 0;
 }
@@ -102,16 +105,19 @@ int return_fork(int phil)
 	pthread_cond_signal(&freed[(phil)%NoPhil]);
 	fork_state[(phil+1)%NoPhil]='F';
 	pthread_cond_signal(&freed[(phil+1)%NoPhil]);
-	printf("Philosopher[%d] has put down fork[%d] and fork[%d]\n",phil,(phil)%NoPhil,(phil+1)%NoPhil);
+	printf("Philosopher[%d] has put down fork[%d] and fork[%d]\n",phil,(phil+1)%NoPhil,(phil)%NoPhil);
 	pthread_mutex_unlock(&forks);
 	return 0;
 }
 int display()
 {	
+	elapsed=(finish.tv_sec-start.tv_sec);
+	elapsed+=(finish.tv_nsec - start.tv_nsec)/1000000000.0;
 	printf("No of Philosophers = %d\n",NoPhil);
 	for(int i=0;i<NoPhil;i++)
 	{
 		printf("Total time Philosopher[%d] has eaten =%d seconds\n",i,timed[i]);
 	}
+	printf("Total time taken = %f secounds\n",elapsed);
 	return 0;
 }
