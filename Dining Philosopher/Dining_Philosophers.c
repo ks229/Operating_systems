@@ -30,7 +30,6 @@ int main()
 	pthread_t philosopher[NoPhil];
 	fork_state=malloc(NoPhil*sizeof(char));	//state of each fork
 	timed=malloc(NoPhil*sizeof(int));
-	clock_gettime(CLOCK_MONOTONIC, &start);
 	while(choice=='Y')
 	{
 		for(int i=0;i<NoPhil;i++)
@@ -46,6 +45,7 @@ int main()
 		{
 			printf("Mutex initialization failed\n");
 		}
+		clock_gettime(CLOCK_MONOTONIC, &start);
 		for(int i=0;i<NoPhil;i++)
 		{	
 			fork_state[i]='F';
@@ -59,10 +59,11 @@ int main()
 		{	
 			pthread_join(philosopher[i],NULL);
 		}
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed+=(finish.tv_sec-start.tv_sec);
 		printf("Do you want to continue(Y/N):");
 		scanf(" %c",&choice);
 	}
-	clock_gettime(CLOCK_MONOTONIC, &finish);
 	printf("	--Summary--\n");
 	display();
 	return 0;
@@ -75,9 +76,9 @@ void *activity(int phil)	//each philosopher runs as a single thread
 	pickup_fork(phil);
 	printf("Philosopher[%d] -> Eating\n",phil);
 	k=rand()%3+1;	//philosopher eats randomly between 1 to 3 seconds
-	timed[phil]=timed[phil]+k;
 	sleep(k);
-	return_fork(phil);
+	timed[phil]=timed[phil]+k;
+	return_fork(phil);	//philosopher returns the fork back
 	printf("Philosopher[%d] -> Thinking\n",phil);
 }
 int pickup_fork(int phil)
@@ -111,13 +112,11 @@ int return_fork(int phil)
 }
 int display()
 {	
-	elapsed=(finish.tv_sec-start.tv_sec);
-	elapsed+=(finish.tv_nsec - start.tv_nsec)/1000000000.0;
 	printf("No of Philosophers = %d\n",NoPhil);
 	for(int i=0;i<NoPhil;i++)
 	{
 		printf("Total time Philosopher[%d] has eaten =%d seconds\n",i,timed[i]);
 	}
-	printf("Total time taken = %f secounds\n",elapsed);
+	printf("Total time taken = %f seconds\n",elapsed);
 	return 0;
 }
